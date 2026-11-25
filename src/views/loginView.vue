@@ -3,7 +3,7 @@
     <h1>登录</h1>
     <form @submit.prevent="login">
       <label for="name">用户名：</label>
-      <input type="text" id="name" v-model="name" required />
+      <input type="text" id="name" v-model="name" required /><br />
       <select id="role" v-model="role" required>
         <option value="user">用户</option>
         <option value="admin">管理员</option>
