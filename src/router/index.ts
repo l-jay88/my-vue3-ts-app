@@ -13,6 +13,7 @@ const router = createRouter({
           path: '',
           name: 'home',
           component: () => import('../views/HomeView.vue'),
+          meta: { requiresAuth: true, role: ['user', 'admin'] },
         },
         {
           path: 'about',
@@ -24,12 +25,13 @@ const router = createRouter({
           path: 'todo-list',
           name: 'todoList',
           component: () => import('../views/ToDoList.vue'),
-          meta: { requiresAuth: true, role: ['admin'] },
+          meta: { requiresAuth: true, role: ['user', 'admin'] },
         },
         {
           path: 'todo-detail/:id',
           name: 'todoDetail',
           component: () => import('../views/ToDoDetail.vue'),
+          meta: { requiresAuth: true, role: ['user', 'admin'] },
         },
       ],
     },
@@ -45,26 +47,32 @@ const router = createRouter({
     },
   ],
 })
-router.beforeEach((to, from, next) => {
-  if (to.name === 'login' || to.name === 'notFound') {
-    next()
-  } else {
-    const userStore = useUserStore()
-    if (to.meta.requiresAuth) {
-      if (userStore.isLoggedIn) {
-        const requiredRole = (to.meta.role as string[]) ?? []
-        if (requiredRole.includes(userStore.role)) {
-          next()
-        } else {
-          next({ name: 'notFound' })
-        }
-      } else {
-        next({ name: 'login', query: { redirect: to.fullPath } })
-      }
-    } else {
-      next()
+
+router.beforeEach((to) => {
+  const userStore = useUserStore()
+
+  if (to.name === 'login') {
+    if (userStore.isLoggedIn) {
+      return { name: 'home' }
+    }
+    return true
+  }
+
+  if (to.name === 'notFound') {
+    return true
+  }
+
+  if (to.meta.requiresAuth) {
+    if (!userStore.isLoggedIn) {
+      return { name: 'login', query: { redirect: to.fullPath } }
+    }
+    const requiredRole = (to.meta.role as string[]) ?? []
+    if (requiredRole.length > 0 && !requiredRole.includes(userStore.role)) {
+      return { name: 'notFound', query: { reason: 'noPermission' } }
     }
   }
+
+  return true
 })
 
 export default router
